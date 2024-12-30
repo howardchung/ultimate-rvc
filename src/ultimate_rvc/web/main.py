@@ -90,7 +90,7 @@ def _init_app() -> list[gr.Dropdown]:
     ]
     voice_model_delete = gr.Dropdown(choices=voice_model_names)
     custom_embedder_models = [
-        gr.Dropdown(choices=get_custom_embedder_model_names()) for _ in range(6)
+        gr.Dropdown(choices=get_custom_embedder_model_names(), allow_custom_value=True) for _ in range(6)
     ]
     training_models = [
         gr.Dropdown(choices=get_training_model_names()) for _ in range(3)
@@ -200,6 +200,7 @@ def render_app() -> gr.Blocks:
                 info="Select a custom embedder model from the dropdown.",
                 render=False,
                 visible=False,
+                allow_custom_value=True,
             )
             for _ in range(5)
         ]
