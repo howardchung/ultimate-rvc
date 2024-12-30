@@ -2,7 +2,6 @@
 Module which defines functions and other definitions that facilitate
 RVC-based TTS generation.
 """
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -10,6 +9,7 @@ from typing import TYPE_CHECKING
 from pathlib import Path
 
 import anyio
+import os
 
 from pydantic import ValidationError
 
@@ -470,9 +470,7 @@ def mix_speech(
         converted_speech_track=speech_track,
     )
 
-    mixed_speech_path = OUTPUT_AUDIO_DIR / f"{output_name}.{output_format}"
-    return copy_file_safe(mixed_audio_track, mixed_speech_path)
-
+    return mixed_audio_track
 
 def run_pipeline(
     source: str,
@@ -612,6 +610,11 @@ def run_pipeline(
         generated along the way.
 
     """
+    # Check if we already generated this file
+    output_path = Path(OUTPUT_AUDIO_DIR / f"{output_name}.{output_format}")
+    if output_path.exists():
+        return output_path, output_path, output_path
+
     validate_model_exists(model_name, Entity.VOICE_MODEL)
     display_progress("[~] Starting RVC TTS pipeline...", 0, progress_bar)
     speech_track = run_edge_tts(
@@ -657,5 +660,9 @@ def run_pipeline(
         progress_bar=progress_bar,
         percentage=0.66,
     )
-
-    return mixed_speech_track, speech_track, converted_speech_track
+    copy_file_safe(mixed_speech_track, output_path)
+    # We can probably delete all the intermediate files too
+    os.remove(speech_track)
+    os.remove(converted_speech_track)
+    os.remove(mixed_speech_track)
+    return output_path, speech_track, converted_speech_track

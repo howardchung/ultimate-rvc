@@ -428,8 +428,6 @@ def render(
                 output_name,
             ],
             outputs=[mixed_speech, *intermediate_audio_tracks],
-            concurrency_limit=1,
-            concurrency_id=ConcurrencyId.GPU,
         ).success(
             partial(update_dropdowns, get_saved_speech_audio, 1),
             outputs=speech_audio,

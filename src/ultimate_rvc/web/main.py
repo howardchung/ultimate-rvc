@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import Annotated
 
 import os
+import multiprocessing
 
 # NOTE this import is lazily imported later in another module. It is
 # imported here as well to avoid user warnings due to imcompatiblity
@@ -75,6 +76,7 @@ def _init_app() -> list[gr.Dropdown]:
         gr.Dropdown(
             choices=get_edge_tts_voice_names(),
             value="en-US-ChristopherNeural",
+            allow_custom_value=True,
         )
         for _ in range(2)
     ]
@@ -154,6 +156,7 @@ def render_app() -> gr.Blocks:
                 label="Edge TTS voice",
                 info="Select a voice to use for text to speech conversion.",
                 render=False,
+                allow_custom_value=True,
             )
             for _ in range(2)
         ]
@@ -452,7 +455,7 @@ def start_app(
     """Run the Ultimate RVC web application."""
     os.environ["GRADIO_TEMP_DIR"] = str(TEMP_DIR)
     gr.set_static_paths([MODELS_DIR, AUDIO_DIR])
-    app.queue()
+    app.queue(default_concurrency_limit = multiprocessing.cpu_count())
     app.launch(
         share=share,
         server_name=(None if not listen else (listen_host or "0.0.0.0")),  # noqa: S104
