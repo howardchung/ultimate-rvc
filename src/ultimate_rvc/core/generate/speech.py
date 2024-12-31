@@ -616,6 +616,8 @@ def run_pipeline(
         return output_path, output_path, output_path
 
     validate_model_exists(model_name, Entity.VOICE_MODEL)
+    if embedder_model == EmbedderModel.CUSTOM:
+        validate_model_exists(custom_embedder_model, Entity.CUSTOM_EMBEDDER_MODEL)
     display_progress("[~] Starting RVC TTS pipeline...", 0, progress_bar)
     speech_track = run_edge_tts(
         source,
