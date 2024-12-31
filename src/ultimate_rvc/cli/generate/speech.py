@@ -5,8 +5,10 @@ TTS.
 
 from __future__ import annotations
 
+from io import BytesIO
 from typing import TYPE_CHECKING, Annotated
 
+import sys
 import time
 
 import typer
@@ -22,7 +24,10 @@ from ultimate_rvc.cli.common import (
 )
 from ultimate_rvc.cli.generate.typing_extra import PanelName
 from ultimate_rvc.common import lazy_import
+from ultimate_rvc.core.generate.common import get_rvc_files
 from ultimate_rvc.typing_extra import AudioExt, EmbedderModel, F0Method
+
+from ultimate_rvc.rvc.infer.infer import VoiceConverter  # noqa: PLC0415
 
 if TYPE_CHECKING:
     from ultimate_rvc.core.generate import speech as generate_speech
@@ -85,22 +90,83 @@ def run_edge_tts(
 ) -> None:
     """Convert text to speech using Edge TTS."""
     start_time = time.perf_counter()
+    
+    pitch_shift_str = f"{pitch_shift:+}Hz"
+    speed_change_str = f"{speed_change:+}%"
+    volume_change_str = f"{volume_change:+}%"
 
-    rprint()
-
-    audio_path = generate_speech.run_edge_tts(
+    edge_tts = lazy_import("edge_tts")
+    communicate = edge_tts.Communicate(
         source,
         voice,
-        pitch_shift,
-        speed_change,
-        volume_change,
+        pitch=pitch_shift_str,
+        rate=speed_change_str,
+        volume=volume_change_str,
     )
 
-    rprint("[+] Text successfully converted to speech!")
-    rprint()
-    rprint("Elapsed time:", format_duration(time.perf_counter() - start_time))
-    rprint(Panel(f"[green]{audio_path}", title="Speech Path"))
+    tts = BytesIO()
+    for chunk in communicate.stream_sync():
+        # concatenate the audio chunks into a binary buffer
+        if (chunk['type'] == "audio"):
+            tts.write(chunk['data'])
+    # reset the stream to the start so we can read it
+    tts.seek(0)
 
+    rprint("[+] Text successfully converted to speech!")
+    rprint("Elapsed time:", format_duration(time.perf_counter() - start_time))
+    rprint(tts.getbuffer().nbytes)
+    
+    rvc_model_path, rvc_index_path = get_rvc_files("Trebek")
+    voice_converter = VoiceConverter()
+    output = BytesIO()
+    voice_converter.convert_audio(
+        # index_rate: float = 0.5,
+        # filter_radius: int = 3,
+        # rms_mix_rate: float = 0.25,
+        # protect_rate: float = 0.33,
+        # hop_length: int = 128,
+        # split_speech: bool = False,
+        # autotune_speech: bool = False,
+        # autotune_strength: float = 1,
+        # clean_speech: bool = False,
+        # clean_strength: float = 0.7,
+        # embedder_model: EmbedderModel = EmbedderModel.CONTENTVEC,
+        # custom_embedder_model: str | None = None,
+        # sid: int = 0,
+        audio_input_path=None,
+        audio_input_buffer=tts,
+        audio_output_path=None,
+        audio_output_buffer=output,
+        model_path=str(rvc_model_path),
+        index_path=str(rvc_index_path) if rvc_index_path else "",
+        pitch=0,
+        f0_methods={F0Method.RMVPE},
+        index_rate=0.5,
+        volume_envelope=1,
+        protect=0.5,
+        hop_length=128,
+        split_audio=False,
+        f0_autotune=False,
+        f0_autotune_strength=1,
+        filter_radius=3,
+        embedder_model="contentvec",
+        embedder_model_custom=None,
+        clean_audio=False,
+        clean_strength=0.7,
+        post_process=False,
+        resample_sr=0,
+        sid=0,
+    )
+
+    rprint("[+] Voice successfully converted using RVC!")
+    rprint("Elapsed time:", format_duration(time.perf_counter() - start_time))
+    rprint(output.getbuffer().nbytes)
+    
+    # write the result buffer
+    # sys.stdout.buffer.write(output.getbuffer())
+    # we could convert this to mp3 to save some space
+    with open("output.wav", "wb") as f:
+        f.write(output.getbuffer())
 
 @app.command()
 def list_edge_tts_voices(

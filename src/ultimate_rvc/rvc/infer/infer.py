@@ -1,3 +1,4 @@
+from io import BytesIO
 from typing import TYPE_CHECKING, Unpack
 
 import logging
@@ -220,8 +221,10 @@ class VoiceConverter:
 
     def convert_audio(
         self,
-        audio_input_path: str,
-        audio_output_path: str,
+        audio_input_path: str | None,
+        audio_input_buffer: BytesIO | None,
+        audio_output_path: str | None,
+        audio_output_buffer: BytesIO | None,
         model_path: str,
         index_path: str,
         pitch: int = 0,
@@ -281,6 +284,7 @@ class VoiceConverter:
 
         audio = load_audio_infer(
             audio_input_path,
+            audio_input_buffer,
             16000,
             **kwargs,
         )
@@ -358,16 +362,19 @@ class VoiceConverter:
                 **kwargs,
             )
 
-        sf.write(audio_output_path, audio_opt, self.tgt_sr, format="WAV")
-        output_path_format = audio_output_path.replace(
-            ".wav",
-            f".{export_format.lower()}",
-        )
-        audio_output_path = self.convert_audio_format(
-            audio_output_path,
-            output_path_format,
-            export_format,
-        )
+        if audio_output_path:
+            sf.write(audio_output_path, audio_opt, self.tgt_sr, format="WAV")
+            output_path_format = audio_output_path.replace(
+                ".wav",
+                f".{export_format.lower()}",
+            )
+            audio_output_path = self.convert_audio_format(
+                audio_output_path,
+                output_path_format,
+                export_format,
+            )
+        else:
+            sf.write(audio_output_buffer, audio_opt, self.tgt_sr, format="WAV")
 
         elapsed_time = time.time() - start_time
         logger.info(

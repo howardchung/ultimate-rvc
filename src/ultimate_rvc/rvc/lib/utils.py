@@ -61,15 +61,19 @@ def load_audio(file, sample_rate):
 
 def load_audio_infer(
     file,
+    buffer,
     sample_rate,
     **kwargs,
 ):
     formant_shifting = kwargs.get("formant_shifting", False)
     try:
-        file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
-        if not os.path.isfile(file):
-            raise FileNotFoundError(f"File not found: {file}")
-        audio, sr = sf.read(file)
+        if file:
+            file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
+            if not os.path.isfile(file):
+                raise FileNotFoundError(f"File not found: {file}")
+            audio, sr = sf.read(file)
+        else:
+            audio, sr = sf.read(buffer)
         if len(audio.shape) > 1:
             audio = librosa.to_mono(audio.T)
         if sr != sample_rate:

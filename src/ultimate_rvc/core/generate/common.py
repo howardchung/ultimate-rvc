@@ -213,7 +213,7 @@ def wavify(
     return wav_path
 
 
-def _get_rvc_files(model_name: str) -> tuple[Path, Path | None]:
+def get_rvc_files(model_name: str) -> tuple[Path, Path | None]:
     """
     Get the RVC model file and potential index file of a voice model.
 
@@ -434,13 +434,15 @@ def convert(
             progress_bar,
         )
 
-        rvc_model_path, rvc_index_path = _get_rvc_files(model_name)
+        rvc_model_path, rvc_index_path = get_rvc_files(model_name)
 
         voice_converter = _get_voice_converter()
 
         voice_converter.convert_audio(
             audio_input_path=str(audio_path),
+            audio_input_buffer=None,
             audio_output_path=str(converted_audio_path),
+            audio_output_buffer=None,
             model_path=str(rvc_model_path),
             index_path=str(rvc_index_path) if rvc_index_path else "",
             pitch=n_semitones,
