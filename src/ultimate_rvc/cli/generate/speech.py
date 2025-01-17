@@ -22,7 +22,7 @@ from ultimate_rvc.cli.common import (
     complete_f0_method,
     format_duration,
 )
-from ultimate_rvc.cli.generate.typing_extra import PanelName
+from ultimate_rvc.cli.typing_extra import PanelName
 from ultimate_rvc.common import lazy_import
 from ultimate_rvc.core.generate.common import get_rvc_files
 from ultimate_rvc.typing_extra import AudioExt, EmbedderModel, F0Method
